@@ -1,8 +1,7 @@
 import pysrt
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from scipy import interpolate
-import numpy as np
+from scipy.signal import savgol_filter
 
 make_3d_visualization = False
 threshold_height = 27
@@ -19,19 +18,9 @@ lat = [lat[i] for i in range(len(alt)) if alt[i] < threshold_height]
 lon = [lon[i] for i in range(len(alt)) if alt[i] < threshold_height]
 alt = [alt[i] for i in range(len(alt)) if alt[i] < threshold_height]
 
-# Create a series of points for interpolation
-x = np.linspace(0, len(lat), len(lat))
-
-# Create a cubic spline interpolation function for latitude and longitude
-spl_lat = interpolate.splrep(x, lat, s=0)
-spl_lon = interpolate.splrep(x, lon, s=0)
-
-# Create a smooth series of x values
-x_smooth = np.linspace(0, len(lat), 500)  # 500 is the number of points for smoothness
-
-# Get the smooth latitude and longitude values
-lat_smooth = interpolate.splev(x_smooth, spl_lat)
-lon_smooth = interpolate.splev(x_smooth, spl_lon)
+# Apply Savitzky-Golay filter to latitude and longitude
+lat_smooth = savgol_filter(lat, 51, 3)  # window size 51, polynomial order 3
+lon_smooth = savgol_filter(lon, 51, 3)  # window size 51, polynomial order 3
 
 if make_3d_visualization:
     fig = plt.figure()
