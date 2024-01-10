@@ -9,23 +9,22 @@ cap = cv2.VideoCapture('source_files/DJI_0076.mp4')
 # Load the data from an SRT file
 subs = pysrt.open('source_files/DJI_0076.SRT')
 
-# Extract the timestamps and coordinates from the SRT file
+# Open the .srt file
+with open('source_files/DJI_0076.srt', 'r') as file:
+    srt_text = file.read()
 
+# Extract the times
+times = re.findall(r'(> \d{2}:\d{2}:\d{2},\d{3})', srt_text)    
 
-with open('source_files/DJI_0076.SRT', 'r') as file:
-    content = file.read()
-
-# # Используйте регулярное выражение для поиска временных меток
-# timestamps = re.findall(r'\d{2}:\d{2}:\d{2},\d{3}', content)
-
-# timestamps_in_msec = []
-# for timestamp in timestamps:
-#     hours, minutes, seconds_milliseconds = timestamp.split(':')
-#     seconds, milliseconds = seconds_milliseconds.split(',')
-#     total_milliseconds = int(hours) * 60 * 60 * 1000 + int(minutes) * 60 * 1000 + int(seconds) * 1000 + int(milliseconds)
-#     timestamps_in_msec.append(total_milliseconds)
-
-timestamps_srt = [str(sub.start) for sub in subs]  # Keep the timestamps in the format 0:00:00,000
+# Convert to milliseconds
+timestamps_srt = []
+for time in times:
+    time = time[2:]
+    h, m, s_ms = time.split(':')
+    s, ms = s_ms.split(',')
+    total_ms = int(h) * 3600000 + int(m) * 60000 + int(s) * 1000 + int(ms)
+    timestamps_srt.append(total_ms)
+    
 lat = [float(sub.text.split('latitude: ')[1].split(' ')[0].replace(']', '')) for sub in subs]
 lon = [float(sub.text.split('longitude: ')[1].split(' ')[0].replace(']', '')) for sub in subs]
 
@@ -45,12 +44,10 @@ while cap.isOpened():
     
     # Get the timestamp of the current frame in milliseconds
     timestamp_video = cap.get(cv2.CAP_PROP_POS_MSEC)
-    # Convert the timestamp to the format 0:00:00,000
-    #formatted_timestamp_video = str(datetime.timedelta(milliseconds=timestamp_video)).replace('.', ',')[:-3]
-    print(timestamp_video, timestamps_srt[i])
     # If the video timestamp matches the SRT timestamp, print the coordinates
-    if i < len(timestamps_srt) and abs(float(timestamp_video) - float(timestamps_srt[i].replace(',', '.'))) <= 0.005:
-        print('Timestamp: ', formatted_timestamp_video)
+    # print(float(timestamp_video)-float(timestamps_srt[i]))
+    if i < len(timestamps_srt) and abs(float(timestamp_video) - float(timestamps_srt[i])) <= 2.5: # 2.5 msec difference is allowed
+        print('Timestamp: ', timestamp_video)
         print('Coordinates: ', lat[i], lon[i])
         i += 1  # Move to the next timestamp and coordinates
     # Press Q on keyboard to exit
